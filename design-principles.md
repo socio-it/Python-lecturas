@@ -1,4 +1,4 @@
-# Principios de Diseño — App Interactiva
+# Principios de Diseño
 
 Este documento describe una aplicación React que enseña los **principios fundamentales de diseño de software** mediante una lista interactiva, una barra de progreso metálica y ventanas modales con ejemplos de código.
 
