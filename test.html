@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Design Principles Demo</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: white;
+      padding: 20px;
+      width: 80%; max-width: 600px;
+      border-radius: 8px;
+    }
+    .close-btn {
+      float: right;
+      cursor: pointer;
+      font-size: 18px;
+    }
+    pre {
+      background: #f4f4f4;
+      padding: 10px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>Design Principles</h1>
+  <div>
+    <label><input type="checkbox" id="encapsulation" /> Encapsulation</label><br />
+    <label><input type="checkbox" id="interfacePrinciple" /> Interface over Implementation</label><br />
+    <label><input type="checkbox" id="composition" /> Composition over Inheritance</label><br />
+    <label><input type="checkbox" id="looseCoupling" /> Loose Coupling</label><br />
+  </div>
+  <button id="explainBtn">Explain Selected</button>
+
+  <div class="modal" id="modal">
+    <div class="modal-content">
+      <span class="close-btn" id="closeModal">&times;</span>
+      <div id="explanations"></div>
+    </div>
+  </div>
+
+  <script>
+    const explainBtn = document.getElementById("explainBtn");
+    const modal = document.getElementById("modal");
+    const closeModal = document.getElementById("closeModal");
+    const explanationsDiv = document.getElementById("explanations");
+
+    closeModal.onclick = () => { modal.style.display = "none"; };
+    window.onclick = (e) => { if (e.target === modal) modal.style.display = "none"; };
+
+    explainBtn.onclick = () => {
+      explanationsDiv.innerHTML = "";
+      if (document.getElementById("encapsulation").checked) {
+        explanationsDiv.appendChild(renderEncapsulation());
+      }
+      if (document.getElementById("interfacePrinciple").checked) {
+        explanationsDiv.appendChild(renderInterfacePrinciple());
+      }
+      if (document.getElementById("composition").checked) {
+        explanationsDiv.appendChild(renderComposition());
+      }
+      if (document.getElementById("looseCoupling").checked) {
+        explanationsDiv.appendChild(renderLooseCoupling());
+      }
+      modal.style.display = "flex";
+    };
+
+    function renderEncapsulation() {
+      const container = document.createElement("div");
+      const h = document.createElement("h2");
+      h.textContent = "Encapsulation";
+      container.appendChild(h);
+
+      const p = document.createElement("p");
+      p.textContent = "You can enforce access control and hide internal state. Examples using setter/getter, property, or polymorphism style.";
+      container.appendChild(p);
+
+      const code = document.createElement("pre");
+      code.textContent = `// Example in Python-like pseudocode
+
+class Animal:
+    def speak(self):
+        raise NotImplementedError
+
+class Dog(Animal):
+    def speak(self):
+        return "Woof!"
+
+class Cat(Animal):
+    def speak(self):
+        return "Meow!"
+
+# polymorphism: both classes implement same method interface
+
+# Using setters/getters / property:
+class Person:
+    def __init__(self):
+        self._age = 0
+
+    def get_age(self):
+        return self._age
+
+    def set_age(self, a):
+        if a < 0:
+            raise ValueError("Age can't be negative")
+        self._age = a
+
+    age = property(get_age, set_age)
+
+p = Person()
+p.age = 25
+print(p.age)`;
+      container.appendChild(code);
+
+      return container;
+    }
+
+    function renderInterfacePrinciple() {
+      const container = document.createElement("div");
+      const h = document.createElement("h2");
+      h.textContent = "Interface over Implementation";
+      container.appendChild(h);
+
+      const p = document.createElement("p");
+      p.textContent = "Depend on abstractions, not concrete classes. Two ways: ABC / abstract class or protocol / interface.";
+      container.appendChild(p);
+
+      const code = document.createElement("pre");
+      code.textContent = `# Example via abstract base class (Python)
+
+from abc import ABC, abstractmethod
+
+class Shape(ABC):
+    @abstractmethod
+    def area(self):
+        pass
+
+class Circle(Shape):
+    def __init__(self, r): self.r = r
+    def area(self): return 3.14 * self.r * self.r
+
+# Example via protocol (in languages with protocols / interfaces)
+
+class ShapeProtocol:
+    def area(self): pass
+
+class Rectangle:
+    def __init__(self, w, h): self.w = w; self.h = h
+    def area(self): return self.w * self.h
+
+# code using interface:
+def print_area(shape: ShapeProtocol):
+    print("Area is:", shape.area())`;
+      container.appendChild(code);
+
+      return container;
+    }
+
+    function renderComposition() {
+      const container = document.createElement("div");
+      const h = document.createElement("h2");
+      h.textContent = "Composition over Inheritance";
+      container.appendChild(h);
+
+      const p = document.createElement("p");
+      p.textContent = "Instead of subclassing, you give objects behaviors via composition (embedding).";
+      container.appendChild(p);
+
+      const code = document.createElement("pre");
+      code.textContent = `# Example: adding a feature via composition
+
+class Engine:
+    def start(self):
+        return "Engine starting"
+
+class Car:
+    def __init__(self, engine):
+        self.engine = engine  # composed
+
+    def start(self):
+        return self.engine.start()
+
+# Versus inheritance (bad if you later mix different engines)
+class CarWithEngine(Engine):
+    pass`;
+      container.appendChild(code);
+
+      return container;
+    }
+
+    function renderLooseCoupling() {
+      const container = document.createElement("div");
+      const h = document.createElement("h2");
+      h.textContent = "Loose Coupling";
+      container.appendChild(h);
+
+      const p = document.createElement("p");
+      p.textContent = "Classes have minimal dependencies. Techniques: dependency injection, observer pattern.";
+      container.appendChild(p);
+
+      const code = document.createElement("pre");
+      code.textContent = `# Dependency injection example
+
+class Service:
+    def do_work(self):
+        return "Service working"
+
+class Client:
+    def __init__(self, service):
+        self.service = service
+
+    def operate(self):
+        return self.service.do_work()
+
+# Observer pattern example
+
+class Subject:
+    def __init__(self):
+        self._observers = []
+
+    def attach(self, obs):
+        self._observers.append(obs)
+
+    def notify(self, msg):
+        for obs in self._observers:
+            obs.update(msg)
+
+class Observer:
+    def update(self, msg):
+        print("Received:", msg)
+
+# usage
+subj = Subject()
+obs1 = Observer()
+subj.attach(obs1)
+subj.notify("hello")`;
+      container.appendChild(code);
+
+      return container;
+    }
+  </script>
+</body>
+</html>
