@@ -1,0 +1,13 @@
+#deque y suo
+#usar deque para eliminacion o agregacion el los extremos 
+#usar list cuando se necesita acceder a un valor aleatorio dentro de la lista
+#array cuando se tienen un unico tipo de dato
+import collections
+
+stack = collections.deque(range(5))
+print(stack.pop())
+print(stack.popleft())
+stack.rotate()
+print(stack)
+stack.reverse()
+print(stack)
