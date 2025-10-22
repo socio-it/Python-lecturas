@@ -1,0 +1,333 @@
+import React, { useMemo, useState } from "react";
+
+/**
+ * FIX: The previous document was raw HTML, which breaks when executed as TSX (index.tsx).
+ * This file is now a valid React component exported by default.
+ * No external UI libs required. Tailwind optional; inline styles included.
+ */
+
+type Option = {
+  key: string;
+  label: string;
+  explanation: string;
+  code: string;
+};
+
+type Principle = {
+  id: string;
+  title: string;
+  subtitle: string;
+  options: Option[];
+};
+
+const PRINCIPLES: Principle[] = [
+  {
+    id: "encapsulation",
+    title: "1) Encapsulación",
+    subtitle:
+      "Oculta estado y expone una interfaz controlada. Elige ver Polimorfismo, Setter/Getter o Property.",
+    options: [
+      {
+        key: "polymorphism",
+        label: "Polimorfismo",
+        explanation:
+          "Múltiples clases implementan el mismo método y el cliente las usa por la misma interfaz.",
+        code: `# Python\nclass Animal:\n    def speak(self):\n        raise NotImplementedError\n\nclass Dog(Animal):\n    def speak(self):\n        return "Woof!"\n\nclass Cat(Animal):\n    def speak(self):\n        return "Meow!"\n\n# Uso polimórfico\npets = [Dog(), Cat()]\nfor p in pets:\n    print(p.speak())  # mismo método, distinta implementación`,
+      },
+      {
+        key: "setter_getter",
+        label: "Setter & Getter",
+        explanation:
+          "Controlas la mutación validando entradas y evitando exponer el campo directamente.",
+        code: `# Python\nclass Person:\n    def __init__(self):\n        self._age = 0\n\n    def get_age(self):\n        return self._age\n\n    def set_age(self, a):\n        if a < 0:\n            raise ValueError("La edad no puede ser negativa")\n        self._age = a\n\np = Person()\np.set_age(25)\nprint(p.get_age())`,
+      },
+      {
+        key: "property",
+        label: "Property",
+        explanation:
+          "Abstracción idéntica a setter/getter pero con sintaxis de atributo controlado.",
+        code: `# Python\nclass Person:\n    def __init__(self):\n        self._age = 0\n\n    @property\n    def age(self):\n        return self._age\n\n    @age.setter\n    def age(self, a):\n        if a < 0:\n            raise ValueError("La edad no puede ser negativa")\n        self._age = a\n\np = Person()\np.age = 25\nprint(p.age)`,
+      },
+    ],
+  },
+  {
+    id: "interfaces",
+    title: "2) Programa contra interfaces, no implementaciones",
+    subtitle:
+      "Reduce acoplamiento y facilita reemplazos. Dos rutas: ABC (clase abstracta) o Protocol.",
+    options: [
+      {
+        key: "abc",
+        label: "ABC (Clase Abstracta)",
+        explanation:
+          "Defines una interfaz mínima obligatoria con métodos abstractos.",
+        code: `# Python\nfrom abc import ABC, abstractmethod\n\nclass Shape(ABC):\n    @abstractmethod\n    def area(self):\n        pass\n\nclass Circle(Shape):\n    def __init__(self, r):\n        self.r = r\n    def area(self):\n        return 3.1416 * self.r * self.r\n\n# El cliente solo exige 'Shape'`,
+      },
+      {
+        key: "protocol",
+        label: "Protocol (Estructural)",
+        explanation:
+          "Interfaces estructurales: importa el contrato, no la herencia.",
+        code: `# Python 3.8+\nfrom typing import Protocol\n\nclass AreaLike(Protocol):\n    def area(self) -> float: ...\n\nclass Rectangle:\n    def __init__(self, w, h):\n        self.w, self.h = w, h\n    def area(self) -> float:\n        return self.w * self.h\n\n# El cliente acepta cualquier 'AreaLike'\ndef print_area(shape: AreaLike):\n    print(shape.area())\n\nprint_area(Rectangle(2, 3))`,
+      },
+    ],
+  },
+  {
+    id: "composition",
+    title: "3) Composición sobre herencia",
+    subtitle:
+      "Agrega funcionalidades combinando objetos. Ejemplo: añadir capacidad de 'estrellar' (star) a un objeto.",
+    options: [
+      {
+        key: "star_behavior",
+        label: "Agregar 'Star' por composición",
+        explanation:
+          "No heredes de todas las variantes. Inyecta comportamientos reutilizables.",
+        code: `# Python\nclass StarBehavior:\n    def __init__(self):\n        self._starred = False\n    def star(self):\n        self._starred = True\n    def unstar(self):\n        self._starred = False\n    def is_starred(self):\n        return self._starred\n\nclass Document:\n    def __init__(self, title, behaviors=None):\n        self.title = title\n        self.behaviors = behaviors or []\n\n    # delegación\n    def __getattr__(self, name):\n        for b in self.behaviors:\n            if hasattr(b, name):\n                return getattr(b, name)\n        raise AttributeError(name)\n\n# Componemos en tiempo de creación\nstar_doc = Document("spec.md", behaviors=[StarBehavior()])\nstar_doc.star()\nprint(star_doc.is_starred())  # True`,
+      },
+    ],
+  },
+  {
+    id: "loose",
+    title: "4) Bajo acoplamiento",
+    subtitle:
+      "Módulos con dependencias mínimas. Opciones: Inyección de dependencias y Observador.",
+    options: [
+      {
+        key: "di",
+        label: "Dependency Injection",
+        explanation:
+          "El cliente recibe su dependencia desde fuera. Facilita tests y reemplazos.",
+        code: `# Python\nclass Service:\n    def do_work(self):\n        return "ok"\n\nclass Client:\n    def __init__(self, service: Service):\n        self.service = service\n    def operate(self):\n        return self.service.do_work()\n\nsvc = Service()\ncli = Client(svc)\nprint(cli.operate())  # 'ok'`,
+      },
+      {
+        key: "observer",
+        label: "Observer Pattern",
+        explanation:
+          "Suscriptores se notifican sin dependencia directa entre sí.",
+        code: `# Python\nclass Subject:\n    def __init__(self):\n        self._observers = []\n    def attach(self, obs):\n        self._observers.append(obs)\n    def notify(self, msg):\n        for o in self._observers:\n            o.update(msg)\n\nclass Logger:\n    def update(self, msg):\n        print("LOG:", msg)\n\ns = Subject()\ns.attach(Logger())\ns.notify("nuevo evento")`,
+      },
+    ],
+  },
+];
+
+function MetallicProgress({ percent }: { percent: number }) {
+  return (
+    <div style={{ width: "100%", marginTop: 16 }}>
+      {/* Línea metálica multicolor de fondo */}
+      <div
+        style={{
+          height: 6,
+          width: "100%",
+          borderRadius: 999,
+          background:
+            "linear-gradient(90deg, #c0c0c0, #9aa0a6, #d1d5db, #6b7280, #c0c0c0)",
+          filter: "saturate(120%)",
+        }}
+      />
+      {/* Carrito barra sobre la línea */}
+      <div
+        aria-label="progreso"
+        style={{
+          position: "relative",
+          top: -10,
+          height: 20,
+          width: "100%",
+          borderRadius: 999,
+          overflow: "hidden",
+          border: "1px solid #9ca3af",
+          background:
+            "linear-gradient(90deg, #bdbdbd, #a3a3a3)",
+          boxShadow: "inset 0 1px 2px rgba(0,0,0,0.15)",
+        }}
+      >
+        <div
+          style={{
+            height: "100%",
+            width: `${Math.max(0, Math.min(100, percent))}%`,
+            transition: "width 400ms ease",
+            background:
+              "linear-gradient(90deg, #fbbf24, #fde047, #bef264)",
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function Modal({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
+  if (!open) return null;
+  return (
+    <div
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.5)",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        zIndex: 1000,
+      }}
+    >
+      <div
+        style={{
+          background: "#fff",
+          borderRadius: 10,
+          width: "min(720px, 92vw)",
+          maxHeight: "90vh",
+          overflowY: "auto",
+          padding: 20,
+          boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <button onClick={onClose} aria-label="Cerrar" style={{ background: "#eee", border: 0, borderRadius: 6, padding: "6px 10px" }}>
+            ×
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function Tabs({
+  options,
+  value,
+  onChange,
+}: {
+  options: Option[];
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div>
+      <div style={{ display: "flex", borderBottom: "1px solid #e5e7eb", marginTop: 8 }}>
+        {options.map((o) => (
+          <button
+            key={o.key}
+            onClick={() => onChange(o.key)}
+            style={{
+              flex: 1,
+              padding: "8px 10px",
+              cursor: "pointer",
+              fontWeight: 600,
+              background: value === o.key ? "#fbbf24" : "transparent",
+              color: value === o.key ? "#111827" : "#374151",
+              border: 0,
+            }}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+      {options.map((o) => (
+        <div key={o.key} style={{ display: value === o.key ? "block" : "none", padding: "10px 0" }}>
+          <p style={{ margin: 0, marginBottom: 8, color: "#374151", fontSize: 14 }}>{o.explanation}</p>
+          <pre
+            style={{
+              background: "#f3f4f6",
+              padding: 12,
+              borderRadius: 8,
+              fontSize: 12,
+              whiteSpace: "pre-wrap",
+              overflowX: "auto",
+            }}
+          >
+            {o.code}
+          </pre>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default function DesignPrinciplesApp() {
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState<Principle | null>(null);
+  const [tabById, setTabById] = useState<Record<string, string>>({});
+
+  const selectedList = useMemo(() => PRINCIPLES.filter((p) => selected[p.id]), [selected]);
+  const progress = (selectedList.length / PRINCIPLES.length) * 100;
+
+  const toggle = (id: string) => setSelected((s) => ({ ...s, [id]: !s[id] }));
+
+  return (
+    <div style={{ fontFamily: "system-ui, sans-serif", padding: 20, maxWidth: 900, margin: "0 auto", color: "#111827" }}>
+      <h1 style={{ fontSize: 28, margin: 0 }}>Principios de Diseño</h1>
+      <p style={{ marginTop: 6, color: "#6b7280" }}>
+        Checklist con celdas de verificación. Cada fila incluye un botón de información para abrir un popup con
+        pestañas y ejemplos. La barra superior muestra el avance. Bajo la barra hay una línea metálica multicolor.
+      </p>
+      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, boxShadow: "0 2px 4px rgba(0,0,0,0.05)", marginTop: 16 }}>
+        <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+          {PRINCIPLES.map((p, idx) => (
+            <li key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "12px 16px", borderTop: idx === 0 ? "none" : "1px solid #f3f4f6" }}>
+              <div style={{ display: "flex", gap: 10 }}>
+                <input
+                  id={`cb-${p.id}`}
+                  type="checkbox"
+                  checked={!!selected[p.id]}
+                  onChange={() => toggle(p.id)}
+                  style={{ marginTop: 4 }}
+                />
+                <div>
+                  <label htmlFor={`cb-${p.id}`} style={{ fontWeight: 600 }}>{p.title}</label>
+                  <div style={{ fontSize: 14, color: "#6b7280" }}>{p.subtitle}</div>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setActive(p);
+                  setOpen(true);
+                }}
+                style={{ background: "#e5e7eb", border: 0, borderRadius: 6, padding: "6px 10px", cursor: "pointer" }}
+              >
+                Info
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <Modal open={open} onClose={() => setOpen(false)}>
+        {active ? (
+          <div>
+            <h2 style={{ marginTop: 0 }}>{active.title}</h2>
+            <p style={{ color: "#6b7280" }}>{active.subtitle}</p>
+            <Tabs
+              options={active.options}
+              value={tabById[active.id] || active.options[0].key}
+              onChange={(v) => setTabById((m) => ({ ...m, [active.id]: v }))}
+            />
+          </div>
+        ) : (
+          <div>
+            <h3 style={{ marginTop: 0 }}>Explicaciones seleccionadas</h3>
+            <p style={{ color: "#6b7280" }}>Revisa cada principio y cambia de pestaña para ver sus variantes.</p>
+            {selectedList.length === 0 ? (
+              <p style={{ color: "#6b7280" }}>No hay elementos seleccionados.</p>
+            ) : (
+              <div>
+                {selectedList.map((p) => (
+                  <div key={p.id} style={{ marginBottom: 20 }}>
+                    <h4 style={{ marginBottom: 6 }}>{p.title}</h4>
+                    <Tabs
+                      options={p.options}
+                      value={tabById[p.id] || p.options[0].key}
+                      onChange={(v) => setTabById((m) => ({ ...m, [p.id]: v }))}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
+    <MetallicProgress percent={progress} />
+    </div>
+  );
+}
+
